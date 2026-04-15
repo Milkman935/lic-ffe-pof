@@ -1,0 +1,127 @@
+/* ── POF Base Styles ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a { color: var(--champ-color); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* Utility classes */
+.hidden { display: none !important; }
+.text-muted { color: var(--text-muted); }
+.text-dim { color: var(--text-dim); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-champ { color: var(--champ-color); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 8px; font-weight: 600;
+  font-size: 13px; transition: all 0.15s; border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--champ-color); color: #fff;
+  border-color: var(--champ-color);
+}
+.btn-primary:hover { filter: brightness(1.15); }
+
+.btn-ghost {
+  background: var(--surface2); color: var(--text);
+  border-color: var(--border);
+}
+.btn-ghost:hover { background: var(--surface3); border-color: var(--text-dim); }
+
+.btn-danger {
+  background: var(--danger); color: #fff;
+  border-color: var(--danger);
+}
+.btn-danger:hover { filter: brightness(1.15); }
+
+.btn-lg { padding: 13px 28px; font-size: 15px; border-radius: 10px; }
+.btn-sm { padding: 5px 11px; font-size: 12px; border-radius: 6px; }
+
+/* Toast */
+#pof-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  min-width: 260px; max-width: 480px;
+}
+.pof-toast-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 18px;
+  box-shadow: var(--shadow); font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 10px;
+  animation: toastIn 0.2s ease;
+}
+.pof-toast-item.success { border-left: 3px solid var(--success); }
+.pof-toast-item.error   { border-left: 3px solid var(--danger); }
+.pof-toast-item.info    { border-left: 3px solid var(--champ-color); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Theme toggle */
+.theme-btn {
+  position: fixed; top: 16px; right: 16px; z-index: 200;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 50%; width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); transition: all 0.15s;
+  box-shadow: var(--shadow);
+}
+.theme-btn:hover { color: var(--text); border-color: var(--text-muted); }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.hidden { display: none; }
+
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px; width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+.modal-title {
+  font-size: 20px; font-weight: 800; margin-bottom: 6px; color: var(--text);
+}
+.modal-sub {
+  font-size: 13px; color: var(--text-muted); margin-bottom: 24px;
+}

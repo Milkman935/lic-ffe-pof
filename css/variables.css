@@ -1,0 +1,36 @@
+/* ── POF Design Tokens — mirrors System/css/variables.css ── */
+:root {
+  --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c28; --surface3:#242436;
+  --border:#2a2a40; --text:#e8e8f0; --text-muted:#7070a0; --text-dim:#4a4a70;
+  --success:#00c853; --warning:#ffab00; --danger:#ff1744; --info:#2196f3;
+  --radius:12px; --shadow:0 4px 24px rgba(0,0,0,0.4);
+  --input-bg:#1c1c28;
+  --f1-color:#e10600; --wec-color:#0067ff; --motogp-color:#ff6900;
+  --champ-color:#0067ff;
+
+  /* POF-specific */
+  --pof-header-bg:#052B5E;
+  --pof-header-text:#BEFFF5;
+  --pof-input-green:rgba(0,200,83,0.18);
+  --pof-input-green-border:rgba(0,200,83,0.4);
+  --pof-section-head:#0d1f3c;
+  --pof-section-head-light:#1a3a6e;
+}
+
+body.light {
+  --bg:#f0f2f5; --surface:#ffffff; --surface2:#f5f7fa; --surface3:#eaecef;
+  --border:#d0d4dd; --text:#1a1a2e; --text-muted:#6b7280; --text-dim:#9ca3af;
+  --input-bg:#f5f7fa;
+
+  --pof-header-bg:#052B5E;
+  --pof-header-text:#BEFFF5;
+  --pof-input-green:rgba(0,160,60,0.12);
+  --pof-input-green-border:rgba(0,160,60,0.5);
+  --pof-section-head:#0a2550;
+  --pof-section-head-light:#1a3a6e;
+}
+
+/* Championship accent overrides */
+body[data-champ="f1"]     { --champ-color:var(--f1-color); }
+body[data-champ="wec"]    { --champ-color:var(--wec-color); }
+body[data-champ="motogp"] { --champ-color:var(--motogp-color); }

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>POF Admin — LIC FFE Management</title>
+
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<div class="admin-header">
+  <img src="assets/images/Lusail.png" alt="LIC" class="admin-logo">
+  <div class="admin-title-group">
+    <div class="admin-title">POF Admin Dashboard</div>
+    <div class="admin-subtitle">Paddock Order Form — LIC FFE Management System</div>
+  </div>
+  <div class="admin-header-actions">
+    <button class="btn btn-ghost btn-sm" onclick="triggerImportFile()" title="Import a submission JSON">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Import JSON
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="togglePOFTheme()" title="Toggle theme">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ── PAGE ── -->
+<div class="admin-page">
+
+  <!-- Stats row -->
+  <div class="admin-stats">
+    <div class="stat-card">
+      <div class="stat-card-label">Total Submissions</div>
+      <div class="stat-card-value" id="stat-total">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Submitted</div>
+      <div class="stat-card-value champ" id="stat-submitted">0</div>
+      <div class="stat-card-sub">Awaiting import</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Imported to Matrix</div>
+      <div class="stat-card-value" style="color:var(--success)" id="stat-imported">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label">Draft / Unsent</div>
+      <div class="stat-card-value" style="color:var(--text-muted)" id="stat-draft">0</div>
+    </div>
+  </div>
+
+  <!-- ── Generate link ── -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <div class="admin-section-title">Generate Team Form Link</div>
+    </div>
+    <div class="gen-card">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+        Select a championship, year, and team to generate a shareable order form link.
+        Copy and send it directly to the team.
+      </p>
+      <div class="gen-row">
+        <div class="gen-field">
+          <label>Championship</label>
+          <select class="gen-select" id="gen-champ">
+            <option value="">— Select Championship —</option>
+          </select>
+        </div>
+        <div class="gen-field">
+          <label>Year</label>
+          <select class="gen-select" id="gen-year">
+            <option value="">— Select Year —</option>
+          </select>
+        </div>
+        <div class="gen-field">
+          <label>Team</label>
+          <select class="gen-select" id="gen-team">
+            <option value="">— Select Team —</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="gen-link-row" class="gen-link-output hidden">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.6">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        <span class="gen-link-text" id="gen-link-text"></span>
+        <button class="gen-link-copy" onclick="copyGeneratedLink()">Copy</button>
+        <button class="gen-link-copy" onclick="openGeneratedLink()">Open ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Submissions ── -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <div class="admin-section-title">
+        Submissions
+        <span id="sub-count" style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:8px"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="renderSubmissionsTable()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M8 16H3v5"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="admin-filter-bar" style="margin-bottom:12px">
+      <input type="text" class="admin-search-input" id="filter-search"
+        placeholder="Search team name…" oninput="applyFilters()">
+      <select class="admin-filter-select" id="filter-champ" onchange="applyFilters();syncYearOptions()">
+        <option value="">All Championships</option>
+        <option value="WEC">WEC</option>
+        <option value="F1">F1</option>
+        <option value="MOTOGP">MotoGP</option>
+      </select>
+      <select class="admin-filter-select" id="filter-year" onchange="applyFilters()">
+        <option value="">All Years</option>
+      </select>
+      <select class="admin-filter-select" id="filter-status" onchange="applyFilters()">
+        <option value="">All Statuses</option>
+        <option value="submitted">Submitted</option>
+        <option value="imported">Imported</option>
+        <option value="draft">Draft</option>
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="submissions-table-wrap">
+      <table class="submissions-table">
+        <thead>
+          <tr>
+            <th>Champ</th>
+            <th>Year</th>
+            <th>Team</th>
+            <th>Submitted</th>
+            <th>Grand Total</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sub-tbody">
+          <tr><td colspan="7" class="sub-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              style="display:block;margin:0 auto 12px;opacity:.3">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            No submissions yet
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── How it works ── -->
+  <div class="admin-section">
+    <div class="admin-section-header">
+      <div class="admin-section-title">How It Works</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px">
+        <div>
+          <div style="font-size:24px;font-weight:900;color:var(--champ-color);margin-bottom:6px">01</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Generate Link</div>
+          <div style="font-size:12px;color:var(--text-muted)">Select championship, year, and team above. Copy the generated link.</div>
+        </div>
+        <div>
+          <div style="font-size:24px;font-weight:900;color:var(--champ-color);margin-bottom:6px">02</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Send to Team</div>
+          <div style="font-size:12px;color:var(--text-muted)">Email or message the link to the team. They open it and fill in quantities.</div>
+        </div>
+        <div>
+          <div style="font-size:24px;font-weight:900;color:var(--champ-color);margin-bottom:6px">03</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Team Submits</div>
+          <div style="font-size:12px;color:var(--text-muted)">Team fills the form and hits Submit. Appears here as "Submitted".</div>
+        </div>
+        <div>
+          <div style="font-size:24px;font-weight:900;color:var(--champ-color);margin-bottom:6px">04</div>
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Import to Matrix</div>
+          <div style="font-size:12px;color:var(--text-muted)">Click "Import" to push team quantities into the main FFE matrix automatically.</div>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding:14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border)">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px">
+          <strong style="color:var(--warning)">⚠ Import Note:</strong>
+          The "Import to Matrix" button works when both this admin page and the main matrix project
+          (<code style="background:var(--surface3);padding:1px 5px;border-radius:3px">System/index.html</code>)
+          are served from the same local server, so they share the same
+          <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">localStorage</code>.
+        </p>
+        <p style="font-size:12px;color:var(--text-muted)">
+          <strong>Recommended:</strong> Run both from the same server root (e.g.
+          <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">python3 -m http.server 8080</code>
+          from <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">~/Desktop</code>), then open
+          <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">localhost:8080/POF/</code> and
+          <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">localhost:8080/System/</code>.
+          Alternatively, use the "Download JSON" button and upload via the matrix's Import button.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.admin-page -->
+
+<!-- ── Submission detail modal ── -->
+<div class="modal-overlay hidden" id="sub-detail-modal"
+  onclick="if(event.target===this)this.classList.add('hidden')">
+  <div class="modal-box" id="sub-detail-body" style="max-width:720px"></div>
+</div>
+
+<!-- Toast -->
+<div id="pof-toast"></div>
+
+<!-- jsPDF (PDF generation) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<!-- JS -->
+<script src="js/catalog.js"></script>
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/admin.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', initAdmin);
+</script>
+</body>
+</html>
