@@ -50,21 +50,7 @@ function renderGenerateForm() {
     yearSel.dispatchEvent(new Event('change'));
   };
 
-  yearSel.onchange = () => {
-    const champKey = champSel.value;
-    const year     = yearSel.value;
-    teamSel.innerHTML = '<option value="">— Select Team —</option>';
-    updateGeneratedLink();
-
-    if (!champKey || !year) return;
-    // Use configured team list for this year, or fall back to nearest configured year
-    const teams = getTeamListWithFallback(champKey, year);
-    teams.sort().forEach(t => {
-      teamSel.innerHTML += `<option value="${teamNameToSlug(t)}">${t}</option>`;
-    });
-  };
-
-  teamSel.onchange = updateGeneratedLink;
+  yearSel.onchange = updateGeneratedLink;
 }
 
 function updateGeneratedLink() {
@@ -74,17 +60,18 @@ function updateGeneratedLink() {
   const linkRow  = document.getElementById('gen-link-row');
   const linkText = document.getElementById('gen-link-text');
 
-  const champ = champSel.value;
-  const year  = yearSel.value;
-  const team  = teamSel.value;
+  const champ    = champSel.value;
+  const year     = yearSel.value;
+  const teamName = (teamSel.value || '').trim();
+  const teamSlug = teamNameToSlug(teamName);
 
-  if (!champ || !year || !team) {
+  if (!champ || !year || !teamSlug) {
     if (linkRow) linkRow.classList.add('hidden');
     return;
   }
 
   const base = window.location.href.replace('index.html', '').replace(/\?.*$/, '');
-  const url  = `${base}form.html?champ=${champ}&year=${year}&team=${team}`;
+  const url  = `${base}form.html?champ=${champ}&year=${year}&team=${teamSlug}`;
 
   if (linkText) linkText.textContent = url;
   if (linkRow) linkRow.classList.remove('hidden');
@@ -161,7 +148,11 @@ function renderSubmissionsTable() {
             style="background:rgba(0,103,255,0.15);color:#64b5f6;border:1px solid rgba(0,103,255,0.3)">
             PDF
           </button>
-          ${sub.status === 'submitted' ? `<button class="btn btn-sm btn-primary" onclick="importToMatrix('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')">Import</button>` : ''}
+          ${sub.status === 'submitted'
+            ? `<button class="btn btn-sm btn-primary" onclick="importToMatrix('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')">Import</button>`
+            : sub.status === 'imported'
+              ? `<button class="btn btn-sm btn-ghost" title="Re-run import into matrix" onclick="importToMatrix('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')" style="opacity:.7">↺ Re-import</button>`
+              : ''}
           <button class="btn btn-sm btn-ghost" onclick="downloadSub('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')" title="Download raw JSON">JSON</button>
           <button class="btn btn-sm" style="background:rgba(255,23,68,0.1);color:var(--danger);border:1px solid rgba(255,23,68,0.3)" onclick="deleteSub('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')">✕</button>
         </td>
@@ -230,7 +221,7 @@ function viewSubmission(champ, year, teamSlug) {
         Proforma PDF
       </button>
       <button class="btn btn-ghost" onclick="downloadSub('${champ}','${year}','${teamSlug}')">Download JSON</button>
-      ${sub.status === 'submitted' ? `<button class="btn btn-primary" onclick="importToMatrix('${champ}','${year}','${teamSlug}');document.getElementById('sub-detail-modal').classList.add('hidden')">Import to Matrix</button>` : ''}
+      ${(sub.status === 'submitted' || sub.status === 'imported') ? `<button class="btn btn-primary" onclick="importToMatrix('${champ}','${year}','${teamSlug}');document.getElementById('sub-detail-modal').classList.add('hidden')">${sub.status === 'imported' ? '↺ Re-import' : 'Import to Matrix'}</button>` : ''}
     </div>`;
 
   overlay.classList.remove('hidden');
@@ -241,55 +232,74 @@ function importToMatrix(champ, year, teamSlug) {
   const sub = loadSubmission(champ, year, teamSlug);
   if (!sub) { showPOFToast('Submission not found', 'error'); return; }
 
-  // Check if matrix data is in localStorage
   const matrixKey = `lic_ffe_${champ}_${year}`;
-  const raw = localStorage.getItem(matrixKey);
+  console.log('[POF Admin Import] key:', matrixKey, '| team:', sub.teamName, '| teamSlug:', teamSlug);
+
+  let raw = localStorage.getItem(matrixKey);
 
   if (!raw) {
-    showPOFToast(`Matrix data for ${champ.toUpperCase()} ${year} not found in localStorage. Open the main matrix project in the same browser first.`, 'error');
-    return;
+    // Matrix data doesn't exist yet — create a minimal valid structure so import can proceed
+    console.log('[POF Admin Import] No matrix data found — creating fresh structure');
+    raw = JSON.stringify({ items: [], departments: {}, teams: {}, deliveries: {} });
   }
 
   try {
     const matrixData = JSON.parse(raw);
+    console.log('[POF Admin Import] matrixData teams:', Object.keys(matrixData.teams||{}), '| items:', (matrixData.items||[]).length);
+
     const result = applyPOFSubmissionToMatrix(matrixData, sub);
+    console.log('[POF Admin Import] result:', result);
 
     if (result.success) {
       localStorage.setItem(matrixKey, JSON.stringify(matrixData));
       markAsImported(champ, year, teamSlug);
       renderAdminStats();
       renderSubmissionsTable();
-      showPOFToast(`Imported ${result.itemsUpdated} items for ${sub.teamName} into the matrix.`, 'success');
+      const msg = result.itemsUpdated > 0
+        ? `✓ Imported ${result.itemsUpdated} item${result.itemsUpdated!==1?'s':''} for ${sub.teamName} into ${champ.toUpperCase()} ${year} matrix.`
+        : `⚠ Import ran for ${sub.teamName} but found 0 quantities. Check the submission has items.`;
+      showPOFToast(msg, result.itemsUpdated > 0 ? 'success' : 'error');
     } else {
       showPOFToast(`Import issue: ${result.message}`, 'error');
     }
   } catch(e) {
-    showPOFToast('Import failed: could not parse matrix data.', 'error');
+    console.error('[POF Admin Import] error:', e);
+    showPOFToast('Import failed: ' + e.message, 'error');
   }
+}
+
+/* ── Fuzzy team key resolver (exact → case-insensitive → partial) ── */
+function resolveTeamKeyAdmin(teamsObj, teamName) {
+  if (!teamsObj || !teamName) return null;
+  const keys = Object.keys(teamsObj);
+  if (teamsObj[teamName]) return teamName;
+  const norm = teamName.toUpperCase().trim();
+  const ci = keys.find(k => k.toUpperCase().trim() === norm);
+  if (ci) return ci;
+  const partial = keys.find(k =>
+    k.toUpperCase().trim().includes(norm) || norm.includes(k.toUpperCase().trim())
+  );
+  return partial || null;
 }
 
 /* ── Core import logic (also used by pof-import.js in main project) ── */
 function applyPOFSubmissionToMatrix(matrixData, sub) {
   const teamName = sub.teamName;
 
-  // Navigate to the championship/year data structure
-  // Matrix stores: matrixData.championships[champKey] for year-specific data
-  // OR: matrixData directly (depends on what localStorage key was used)
-  // The main project stores: { departments:{}, teams:{}, items:[], ... } per champ/year blob
   let cd = matrixData;
 
   // Ensure teams object exists
   if (!cd.teams) cd.teams = {};
 
-  // Ensure this team exists
-  if (!cd.teams[teamName]) {
-    cd.teams[teamName] = {
-      locations: {},
-      images: [],
-    };
+  // Resolve team key with fuzzy matching so we don't create duplicates
+  const resolvedKey = resolveTeamKeyAdmin(cd.teams, teamName);
+  const teamKey = resolvedKey || teamName;
+
+  if (!resolvedKey) {
+    cd.teams[teamKey] = { locations: {}, images: [] };
   }
 
-  const team = cd.teams[teamName];
+  const team = cd.teams[teamKey];
   if (!team.locations) team.locations = {};
 
   // Create standard locations for team villa if they don't exist
@@ -344,14 +354,14 @@ function applyPOFSubmissionToMatrix(matrixData, sub) {
     // Set pof_id if missing
     if (!matrixItem.pof_id) matrixItem.pof_id = pofId;
     if (!matrixItem.team_quantities) matrixItem.team_quantities = {};
-    if (!matrixItem.team_quantities[teamName]) matrixItem.team_quantities[teamName] = {};
+    if (!matrixItem.team_quantities[teamKey]) matrixItem.team_quantities[teamKey] = {};
 
     // Apply quantities per location
     LOCATIONS.forEach(locKey => {
       const qty = parseInt(locs[locKey], 10) || 0;
       const locName = LOCATION_MATRIX_NAMES[locKey];
       if (qty > 0) {
-        matrixItem.team_quantities[teamName][locName] = qty;
+        matrixItem.team_quantities[teamKey][locName] = qty;
         itemsUpdated++;
       }
     });
@@ -384,12 +394,12 @@ function applyPOFSubmissionToMatrix(matrixData, sub) {
 
     if (!matrixItem.pof_id) matrixItem.pof_id = pofId;
     if (!matrixItem.team_quantities) matrixItem.team_quantities = {};
-    if (!matrixItem.team_quantities[teamName]) matrixItem.team_quantities[teamName] = {};
+    if (!matrixItem.team_quantities[teamKey]) matrixItem.team_quantities[teamKey] = {};
 
     // Store in Pit location with mast/date metadata in a note
-    matrixItem.team_quantities[teamName]['Pit'] = state.qty;
+    matrixItem.team_quantities[teamKey]['Pit'] = state.qty;
     if (state.startDate || state.endDate || state.mast) {
-      matrixItem.team_quantities[teamName]['_pof_meta'] = {
+      matrixItem.team_quantities[teamKey]['_pof_meta'] = {
         mast: state.mast,
         startDate: state.startDate,
         endDate: state.endDate,

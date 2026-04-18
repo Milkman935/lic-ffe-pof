@@ -25,12 +25,19 @@ function initForm() {
   FORM_CHAMP_CFG = getChampConfig(FORM_CHAMP);
   FORM_YEAR_CFG  = getYearConfig(FORM_CHAMP, FORM_YEAR);
 
-  if (!FORM_CHAMP_CFG || !FORM_YEAR_CFG) {
-    showFormError('Championship or year not found in configuration.');
+  if (!FORM_CHAMP_CFG) {
+    showFormError('Championship not recognised. Please check your link.');
     return;
   }
+  // Year may not be in config — use a generic fallback
+  if (!FORM_YEAR_CFG) {
+    FORM_YEAR_CFG = { cutoffDate: null, eventStart: null, eventEnd: null, teams: [] };
+  }
 
-  const teamName = slugToTeamName(FORM_TEAM_SLUG, FORM_CHAMP, FORM_YEAR);
+  // Resolve team name: check config list first, fall back to un-slugging the URL param
+  const teamName = slugToTeamName(FORM_TEAM_SLUG, FORM_CHAMP, FORM_YEAR)
+    || FORM_TEAM_SLUG.replace(/-/g, ' ').toUpperCase();
+
   if (!teamName) {
     showFormError('Team not found. Please check your link.');
     return;

@@ -82,10 +82,12 @@
           </select>
         </div>
         <div class="gen-field">
-          <label>Team</label>
-          <select class="gen-select" id="gen-team">
-            <option value="">— Select Team —</option>
-          </select>
+          <label>Team Name</label>
+          <input type="text" class="gen-select" id="gen-team"
+            placeholder="e.g. FERRARI AF CORSE"
+            oninput="updateGeneratedLink()"
+            autocomplete="off"
+            style="text-transform:uppercase">
         </div>
       </div>
 
