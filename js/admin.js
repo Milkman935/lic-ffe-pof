@@ -144,9 +144,9 @@ function renderSubmissionsTable() {
         <td><span class="sub-badge ${statusClass}">${sub.status}</span></td>
         <td class="sub-actions">
           <button class="btn btn-sm btn-ghost" onclick="viewSubmission('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')">View</button>
-          <button class="btn btn-sm btn-primary" onclick="downloadPDF('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')" title="Download Proforma PDF"
-            style="background:rgba(0,103,255,0.15);color:#64b5f6;border:1px solid rgba(0,103,255,0.3)">
-            PDF
+          <button class="btn btn-sm btn-primary" onclick="downloadExcel('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')" title="Download Proforma Excel"
+            style="background:rgba(0,170,80,0.15);color:#4caf82;border:1px solid rgba(0,170,80,0.3)">
+            Excel
           </button>
           ${sub.status === 'submitted'
             ? `<button class="btn btn-sm btn-primary" onclick="importToMatrix('${sub.championship.toLowerCase()}','${sub.year}','${sub.teamSlug}')">Import</button>`
@@ -216,9 +216,9 @@ function viewSubmission(champ, year, teamSlug) {
 
     <div style="display:flex;gap:10px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="document.getElementById('sub-detail-modal').classList.add('hidden')">Close</button>
-      <button class="btn btn-primary" onclick="generateProformaPDF(${JSON.stringify(sub).replace(/"/g,'&quot;')})">
+      <button class="btn btn-primary" onclick="generateProformaExcel(${JSON.stringify(sub).replace(/"/g,'&quot;')})">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        Proforma PDF
+        Proforma Excel
       </button>
       <button class="btn btn-ghost" onclick="downloadSub('${champ}','${year}','${teamSlug}')">Download JSON</button>
       ${(sub.status === 'submitted' || sub.status === 'imported') ? `<button class="btn btn-primary" onclick="importToMatrix('${champ}','${year}','${teamSlug}');document.getElementById('sub-detail-modal').classList.add('hidden')">${sub.status === 'imported' ? '↺ Re-import' : 'Import to Matrix'}</button>` : ''}
@@ -413,10 +413,10 @@ function applyPOFSubmissionToMatrix(matrixData, sub) {
 }
 
 /* ── Download / Delete ── */
-function downloadPDF(champ, year, teamSlug) {
+function downloadExcel(champ, year, teamSlug) {
   const sub = loadSubmission(champ, year, teamSlug);
   if (!sub) { showPOFToast('Submission not found', 'error'); return; }
-  generateProformaPDF(sub);
+  generateProformaExcel(sub);
 }
 
 function downloadSub(champ, year, teamSlug) {

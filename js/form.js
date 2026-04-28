@@ -873,9 +873,9 @@ function showSuccessScreen() {
       </ul>
 
       <div style="display:flex;gap:10px;flex-direction:column">
-        <button class="btn btn-primary" style="width:100%" onclick="generateProformaPDF(FORM_SUBMISSION)">
+        <button id="pof-excel-btn" class="btn btn-primary" style="width:100%" onclick="handleExcelDownload(this)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          Download Proforma Invoice (PDF)
+          Download Proforma Invoice (Excel)
         </button>
         <button class="btn btn-ghost" style="width:100%" onclick="downloadSubmissionJSON(FORM_SUBMISSION)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -896,6 +896,21 @@ function renderBankDetails() {
       <div class="bd-row"><span class="bd-label">IBAN</span><span class="bd-value" style="font-family:monospace;font-size:11px">${b.iban}</span></div>
       <div class="bd-row"><span class="bd-label">SWIFT</span><span class="bd-value">${b.swift}</span></div>
     </div>`;
+}
+
+/* ── Excel download with loading state ── */
+async function handleExcelDownload(btn) {
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Generating Excel…';
+  try {
+    await generateProformaExcel(FORM_SUBMISSION);
+  } catch (e) {
+    showPOFToast('Excel generation failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = original;
+  }
 }
 
 /* ── HTML escape helpers ── */
